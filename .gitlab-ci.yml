@@ -1,0 +1,25 @@
+stages:
+  - buildntest
+  - upload
+
+golang:
+  image: golang:1.15-alpine
+  stage: buildntest
+  script:
+    - apk add make
+    - make clean
+    - make test
+    - make
+  artifacts:
+    paths:
+      - vidispine-monitor.amd64
+
+upload:
+  image: docker:19.03.11
+  stage: upload
+  services:
+    - docker:dind
+  script:
+    - docker build . -t guardianmultimedia/vidispine-monitor:$CI_PIPELINE_IID
+    - docker login -u "${DOCKER_USER}" -p "${DOCKER_PAT}"
+    - docker push guardianmultimedia/vidispine-monitor:$CI_PIPELINE_IID
