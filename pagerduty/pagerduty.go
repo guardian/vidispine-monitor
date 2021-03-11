@@ -40,7 +40,9 @@ func SendEvent(req *TriggerEvent, apiKey string, timeout time.Duration) error {
 		return rqErr
 	}
 
-	httpRq.Header.Add("Authorization", fmt.Sprintf("Token token=%s", apiKey))
+	if apiKey != "" {
+		httpRq.Header.Add("Authorization", fmt.Sprintf("Token token=%s", apiKey))
+	}
 	httpRq.Header.Add("Content-Type", "application/json")
 	httpRq.Header.Add("Accept", "application/vnd.pagerduty+json;version=2")
 

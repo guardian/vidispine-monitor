@@ -11,12 +11,12 @@ import (
 )
 
 func main() {
-	checkEveryStr := os.Getenv("CHECK_EVERY")    //interval to check, parsed as a duration
-	pdService := os.Getenv("PD_INTEGRATION_KEY") //pagerduty service ID to alert
-	pdApiKey := os.Getenv("PD_API_KEY")
+	checkEveryStr := os.Getenv("CHECK_EVERY")                        //interval to check, parsed as a duration
+	pdService := os.Getenv("PD_INTEGRATION_KEY")                     //pagerduty service ID to alert
+	pdApiKey := os.Getenv("PD_API_KEY")                              //API key to communicate with PD
 	vidispineHost := os.Getenv("VIDISPINE_HOST")                     //hostname to query
 	vidispineMonitorHttpsStr := os.Getenv("VIDISPINE_MONITOR_HTTPS") //set to TRUE if the 9001 monitoring port is https protected
-	verboseStr := os.Getenv("VERBOSE")
+	verboseStr := os.Getenv("VERBOSE")                               //whether to output verbose logging
 
 	if vidispineHost == "" {
 		log.Fatal("You must specify VIDISPINE_HOST in the environment. Note that this is the hostname not the url.")
@@ -30,7 +30,7 @@ func main() {
 		log.Fatalf("CHECK_EVERY value %s is not a valid duration: %s", checkEveryStr, durParseErr)
 	}
 
-	if pdService == "" || pdApiKey == "" {
+	if pdService == "" {
 		log.Print("WARNING PD_SERVICE and/or PD_API_KEY is not set, no alerts can be raised to pagerduty")
 	}
 
