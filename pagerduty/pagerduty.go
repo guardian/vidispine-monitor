@@ -57,7 +57,7 @@ func SendEvent(req *TriggerEvent, apiKey string, timeout time.Duration) error {
 			contentBytes = []byte("")
 		}
 
-		if response.StatusCode == 200 {
+		if response.StatusCode >= 200 && response.StatusCode <= 299 {
 			log.Printf("INFO pagerduty.SendEvent Submitted event to PagerDuty")
 		} else {
 			log.Printf("ERROR pagerduty.SendEvent Pagerduty returned a %d error: %s", response.StatusCode, string(contentBytes))
