@@ -1,6 +1,66 @@
 package pagerduty
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
+
+//https://developer.pagerduty.com/docs/events-api-v2/trigger-ev
+
+type EventAction string
+
+const (
+	EventActionTrigger     EventAction = "trigger"
+	EventActionAcknowledge EventAction = "acknowledge"
+	EventActionResolve     EventAction = "resolve"
+)
+
+type Severity string
+
+const (
+	SeverityCritical Severity = "critical"
+	SeverityError             = "error"
+	SeverityWarning           = "warning"
+	SeverityInfo              = "info"
+)
+
+type TriggerEventPayload struct {
+	Summary   string   `json:"summary"`
+	Timestamp string   `json:"timestamp"`
+	Source    string   `json:"source"`
+	Severity  Severity `json:"severity"`
+	Component string   `json:"component"`
+	Group     string   `json:"group"`
+	Class     string   `json:"class"`
+}
+
+type TriggerEvent struct {
+	IntegrationKey string              `json:"routing_key"`
+	EventAction    EventAction         `json:"event_action"` //MUST be "trigger"
+	DeDupKey       string              `json:"dedup_key"`
+	Payload        TriggerEventPayload `json:"payload"`
+}
+
+func NewTriggerEvent(component string, integrationKey string, severity Severity, incidentKey string, incidentBody string, timestamp *time.Time) *TriggerEvent {
+	timestampStr := timestamp.Format(time.RFC3339)
+
+	return &TriggerEvent{
+		IntegrationKey: integrationKey,
+		EventAction:    EventActionTrigger,
+		DeDupKey:       incidentKey,
+		Payload: TriggerEventPayload{
+			Summary:   incidentBody,
+			Timestamp: timestampStr,
+			Source:    "vidispine",
+			Severity:  severity,
+			Component: component,
+		},
+	}
+}
+
+func (e *TriggerEvent) String() string {
+	return fmt.Sprintf("%s on %s due to %s", e.EventAction, e.Payload.Source, e.Payload.Summary)
+}
 
 //https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/post
 

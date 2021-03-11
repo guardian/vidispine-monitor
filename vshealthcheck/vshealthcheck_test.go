@@ -24,20 +24,20 @@ func TestVSHealthCheckMonitor_validateHealthcheckEntry_unhealthy(t *testing.T) {
 	if result == nil {
 		t.Error("validateHealthcheckEntry returned no problem on an unhealthy entry")
 	} else {
-		if result.Service.Id != "someservice" {
-			t.Errorf("alert had incorrect service id '%s'", result.Service.Id)
+		if result.IntegrationKey != "someservice" {
+			t.Errorf("alert had incorrect IntegrationKey '%s'", result.IntegrationKey)
 		}
-		if result.Type != "incident" {
-			t.Errorf("alert had incorrect type '%s'", result.Type)
+		if result.EventAction != pagerduty.EventActionTrigger {
+			t.Errorf("alert had incorrect EventAction '%s'", result.EventAction)
 		}
-		if result.Title != "Vidispine test check failed" {
-			t.Errorf("alert had incorrect title '%s'", result.Title)
+		if result.Payload.Summary != "The test check failed at 2010-01-02 03:04:05.678 +0000 UTC" {
+			t.Errorf("alert had incorrect summary '%s'", result.Payload.Summary)
 		}
-		if result.Urgency != pagerduty.UrgencyHigh {
-			t.Errorf("alert had incorrect urgency '%s'", result.Urgency)
+		if result.Payload.Severity != pagerduty.SeverityError {
+			t.Errorf("alert had incorrect severity '%s'", result.Payload.Severity)
 		}
-		if result.IncidentKey != "vidispine-test" {
-			t.Errorf("alert had incorrect incident key '%s'", result.IncidentKey)
+		if result.DeDupKey != "vidispine-test" {
+			t.Errorf("alert had incorrect incident key '%s'", result.DeDupKey)
 		}
 	}
 }

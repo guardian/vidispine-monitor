@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type VSHealthCheckMonitor struct {
@@ -62,7 +63,7 @@ func (m VSHealthCheckMonitor) loadHealthcheck(vsHost string, vsHttps bool) (*Hea
 /**
 check an individual component
 */
-func (m VSHealthCheckMonitor) validateHealthcheckEntry(name string, entry *HealthcheckEntry, verboseMode bool) *pagerduty.CreateIncidentRequest {
+func (m VSHealthCheckMonitor) validateHealthcheckEntry(name string, entry *HealthcheckEntry, verboseMode bool) *pagerduty.TriggerEvent {
 	if verboseMode {
 		log.Printf("INFO (verbose) validateHealthcheckEntry for %s got %v", name, entry)
 	}
@@ -71,15 +72,17 @@ func (m VSHealthCheckMonitor) validateHealthcheckEntry(name string, entry *Healt
 		if verboseMode {
 			log.Printf("INFO (verbose) %s", bodyText)
 		}
-		return pagerduty.NewIncidentRequest(
-			fmt.Sprintf("Vidispine %s check failed", name),
+		return pagerduty.NewTriggerEvent(fmt.Sprintf("Vidispine %s", name),
 			m.PDServiceId,
-			pagerduty.UrgencyHigh,
+			pagerduty.SeverityError,
 			fmt.Sprintf("vidispine-%s", strings.ToLower(name)),
 			bodyText,
+			&entry.Timestamp,
 		)
 	} else {
-		log.Printf("INFO (verbose) validateHealthceckEntry %s passed", name)
+		if verboseMode {
+			log.Printf("INFO (verbose) validateHealthcheckEntry %s passed", name)
+		}
 		return nil //we are healthy, nothing to see here
 	}
 }
@@ -91,7 +94,7 @@ func (m VSHealthCheckMonitor) Name() string {
 /**
 runs the check on Vidispine health
 */
-func (m VSHealthCheckMonitor) Run(verboseMode bool) ([]*pagerduty.CreateIncidentRequest, error) {
+func (m VSHealthCheckMonitor) Run(verboseMode bool) ([]*pagerduty.TriggerEvent, error) {
 	if verboseMode {
 		log.Printf("INFO (verbose) Checking %s on %s", m.Name(), m.VidispineHost)
 	}
@@ -99,9 +102,10 @@ func (m VSHealthCheckMonitor) Run(verboseMode bool) ([]*pagerduty.CreateIncident
 	healthCheckResponse, err := m.loadHealthcheck(m.VidispineHost, m.VidispineHttps)
 	if err != nil {
 		log.Print("ERROR vshealthcheck could not run: ", err)
-		bodyText := err.Error()
-		return []*pagerduty.CreateIncidentRequest{
-			pagerduty.NewIncidentRequest("Vidispine healthcheck could not run", m.PDServiceId, pagerduty.UrgencyHigh, "vshealthcheck", bodyText),
+		bodyText := fmt.Sprint("vidispine healthcheck could not run: ", err.Error())
+		nowtime := time.Now()
+		return []*pagerduty.TriggerEvent{
+			pagerduty.NewTriggerEvent("vidispine-monitor", m.PDServiceId, pagerduty.SeverityError, "vshealthcheck", bodyText, &nowtime),
 		}, err
 	}
 
@@ -123,7 +127,7 @@ func (m VSHealthCheckMonitor) Run(verboseMode bool) ([]*pagerduty.CreateIncident
 		"LDAP",
 	}
 
-	errors := make([]*pagerduty.CreateIncidentRequest, 0)
+	errors := make([]*pagerduty.TriggerEvent, 0)
 	for i, check := range checkList {
 		problem := m.validateHealthcheckEntry(checkNames[i], check, verboseMode)
 		if problem != nil {

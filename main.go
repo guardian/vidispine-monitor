@@ -11,8 +11,9 @@ import (
 )
 
 func main() {
-	checkEveryStr := os.Getenv("CHECK_EVERY")                        //interval to check, parsed as a duration
-	pdService := os.Getenv("PD_SERVICE")                             //pagerduty service ID to alert
+	checkEveryStr := os.Getenv("CHECK_EVERY")    //interval to check, parsed as a duration
+	pdService := os.Getenv("PD_INTEGRATION_KEY") //pagerduty service ID to alert
+	pdApiKey := os.Getenv("PD_API_KEY")
 	vidispineHost := os.Getenv("VIDISPINE_HOST")                     //hostname to query
 	vidispineMonitorHttpsStr := os.Getenv("VIDISPINE_MONITOR_HTTPS") //set to TRUE if the 9001 monitoring port is https protected
 	verboseStr := os.Getenv("VERBOSE")
@@ -29,8 +30,8 @@ func main() {
 		log.Fatalf("CHECK_EVERY value %s is not a valid duration: %s", checkEveryStr, durParseErr)
 	}
 
-	if pdService == "" {
-		log.Print("WARNING PD_SERVICE is not set, no alerts can be raised to pagerduty")
+	if pdService == "" || pdApiKey == "" {
+		log.Print("WARNING PD_SERVICE and/or PD_API_KEY is not set, no alerts can be raised to pagerduty")
 	}
 
 	verboseMode := false
@@ -71,14 +72,13 @@ func main() {
 				log.Printf("WARNING %s returned %d alerts: ", check.Name(), len(alerts))
 				for _, alert := range alerts {
 					log.Printf("WARNING %s %s", check.Name(), alert.String())
-					sendErr := pagerduty.SendIncident(alert)
+					sendErr := pagerduty.SendEvent(alert, pdApiKey, 60*time.Second)
 					if sendErr != nil {
 						log.Printf("ERROR Could not sent alert %s: %s", alert, sendErr)
 					}
 				}
 			}
 		}
-
 		if didFail {
 			log.Print("ERROR Some internal errors occurred while processing the warnings, terminating")
 			os.Exit(1)
