@@ -20,7 +20,7 @@ func TestVSHealthCheckMonitor_validateHealthcheckEntry_unhealthy(t *testing.T) {
 		Timestamp: faketime,
 	}
 
-	result := m.validateHealthcheckEntry("test", toValidate)
+	result := m.validateHealthcheckEntry("test", toValidate, false)
 	if result == nil {
 		t.Error("validateHealthcheckEntry returned no problem on an unhealthy entry")
 	} else {
@@ -56,7 +56,7 @@ func TestVSHealthCheckMonitor_validateHealthcheckEntry_healthy(t *testing.T) {
 		Timestamp: faketime,
 	}
 
-	result := m.validateHealthcheckEntry("test", toValidate)
+	result := m.validateHealthcheckEntry("test", toValidate, false)
 	if result != nil {
 		t.Error("validateHealthcheckEntry returned an unexpected problem: ", result.String())
 	}
