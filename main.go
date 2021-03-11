@@ -17,6 +17,7 @@ func main() {
 	vidispineHost := os.Getenv("VIDISPINE_HOST")                     //hostname to query
 	vidispineMonitorHttpsStr := os.Getenv("VIDISPINE_MONITOR_HTTPS") //set to TRUE if the 9001 monitoring port is https protected
 	verboseStr := os.Getenv("VERBOSE")                               //whether to output verbose logging
+	sendTestMessageStr := os.Getenv("TEST_MESSAGE")                  //if set, then send a test message to PD
 
 	if vidispineHost == "" {
 		log.Fatal("You must specify VIDISPINE_HOST in the environment. Note that this is the hostname not the url.")
@@ -58,6 +59,22 @@ func main() {
 			VidispineHttps: vidispineMonitorHttps,
 			PDServiceId:    pdService,
 		},
+	}
+
+	if sendTestMessageStr != "" {
+		nowtime := time.Now()
+		testMessage := pagerduty.NewTriggerEvent("vidispine-monitor",
+			pdService,
+			pagerduty.SeverityInfo,
+			"test-message",
+			"Test message from vidispine-monitor",
+			&nowtime)
+		sendErr := pagerduty.SendEvent(testMessage, pdApiKey, 60*time.Second)
+		if sendErr == nil {
+			log.Print("INFO test message sent succesfully")
+		} else {
+			log.Fatal("ERROR could not send test message: ", sendErr)
+		}
 	}
 
 	for {
