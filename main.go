@@ -4,6 +4,7 @@ import (
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/common"
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/pagerduty"
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/vshealthcheck"
+	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/vsmetriccheck"
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/vsstoragecheck"
 	"log"
 	"os"
@@ -71,6 +72,12 @@ func main() {
 			VidispineHost:  vidispineHost,
 			VidispineHttps: vidispineMonitorHttps,
 			PDServiceId:    pdService,
+		},
+		vsmetriccheck.VSMetricCheck{
+			VidispineHost:   vidispineHost,
+			VidispineHttps:  vidispineMonitorHttps,
+			VidispineDbName: "vidispinedb",
+			IntegrationKey:  pdService,
 		},
 	}
 
