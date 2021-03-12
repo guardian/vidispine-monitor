@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<GroupDocument xmlns="http://xml.vidispine.com/schema/vidispine">
+    <groupName>StorageCheck</groupName>
+    <description>Permissions for vidispine-monitor to check storages</description>
+    <role>false</role>
+    <parentGroupList>
+        <group>
+            <groupName>_storage_read</groupName>
+            <role>true</role>
+        </group>
+    </parentGroupList>
+</GroupDocument>

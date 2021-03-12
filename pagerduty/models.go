@@ -19,9 +19,9 @@ type Severity string
 
 const (
 	SeverityCritical Severity = "critical"
-	SeverityError             = "error"
-	SeverityWarning           = "warning"
-	SeverityInfo              = "info"
+	SeverityError    Severity = "error"
+	SeverityWarning  Severity = "warning"
+	SeverityInfo     Severity = "info"
 )
 
 type TriggerEventPayload struct {
@@ -59,7 +59,7 @@ func NewTriggerEvent(component string, integrationKey string, severity Severity,
 }
 
 func (e *TriggerEvent) String() string {
-	return fmt.Sprintf("%s on %s due to %s", e.EventAction, e.Payload.Source, e.Payload.Summary)
+	return e.Payload.Summary
 }
 
 //https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/post

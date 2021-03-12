@@ -4,6 +4,7 @@ import (
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/common"
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/pagerduty"
 	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/vshealthcheck"
+	"gitlab.com/codmill/customer-projects/guardian/vidispine-monitor/vsstoragecheck"
 	"log"
 	"os"
 	"strconv"
@@ -16,6 +17,9 @@ func main() {
 	pdApiKey := os.Getenv("PD_API_KEY")                              //API key to communicate with PD
 	vidispineHost := os.Getenv("VIDISPINE_HOST")                     //hostname to query
 	vidispineMonitorHttpsStr := os.Getenv("VIDISPINE_MONITOR_HTTPS") //set to TRUE if the 9001 monitoring port is https protected
+	vidispineApiHttpsStr := os.Getenv("VIDISPINE_API_HTTPS")         //set to TRUE if the 8080 API port is https protected
+	vidispineApiUser := os.Getenv("VIDISPINE_API_USER")              //API user for checking storages
+	vidispineApiPasswd := os.Getenv("VIDISPINE_API_PASSWD")          //API password for checking storages
 	verboseStr := os.Getenv("VERBOSE")                               //whether to output verbose logging
 	sendTestMessageStr := os.Getenv("TEST_MESSAGE")                  //if set, then send a test message to PD
 
@@ -32,7 +36,7 @@ func main() {
 	}
 
 	if pdService == "" {
-		log.Print("WARNING PD_SERVICE and/or PD_API_KEY is not set, no alerts can be raised to pagerduty")
+		log.Print("WARNING PD_INTEGRATION_KEY and/or PD_API_KEY is not set, no alerts can be raised to pagerduty")
 	}
 
 	verboseMode := false
@@ -53,12 +57,33 @@ func main() {
 		}
 	}
 
+	vidispineApiHttps := false
+	if vidispineApiHttpsStr != "" {
+		var boolParseErr error
+		vidispineApiHttps, boolParseErr = strconv.ParseBool(vidispineApiHttpsStr)
+		if boolParseErr != nil {
+			log.Fatalf("The value %s for VIDISPINE_API_HTTPS was not valid, expected 'true' or 'false'", boolParseErr)
+		}
+	}
+
 	healthChecks := []common.MonitorComponent{
 		vshealthcheck.VSHealthCheckMonitor{
 			VidispineHost:  vidispineHost,
 			VidispineHttps: vidispineMonitorHttps,
 			PDServiceId:    pdService,
 		},
+	}
+
+	if vidispineApiUser != "" && vidispineApiPasswd != "" {
+		healthChecks = append(healthChecks, vsstoragecheck.VSStorageCheck{
+			VidispineHost:    vidispineHost,
+			VidispineUser:    vidispineApiUser,
+			VidispinePasswd:  vidispineApiPasswd,
+			PDIntegrationKey: pdService,
+			VidispineHttps:   vidispineApiHttps,
+		})
+	} else {
+		log.Print("WARNING No vidispine api user and/or password was specified, can't do storage detail checks")
 	}
 
 	if sendTestMessageStr != "" {
@@ -88,10 +113,14 @@ func main() {
 			if alerts != nil && len(alerts) > 0 {
 				log.Printf("WARNING %s returned %d alerts: ", check.Name(), len(alerts))
 				for _, alert := range alerts {
-					log.Printf("WARNING %s %s", check.Name(), alert.String())
-					sendErr := pagerduty.SendEvent(alert, pdApiKey, 60*time.Second)
-					if sendErr != nil {
-						log.Printf("ERROR Could not sent alert %s: %s", alert, sendErr)
+					log.Printf("WARNING [%s] %s", check.Name(), alert.String())
+					if pdService == "" {
+						log.Print("WARNING can't send to pagerduty as PD_INTEGRATION_KEY not set")
+					} else {
+						sendErr := pagerduty.SendEvent(alert, pdApiKey, 60*time.Second)
+						if sendErr != nil {
+							log.Printf("ERROR Could not sent alert %s: %s", alert, sendErr)
+						}
 					}
 				}
 			}
