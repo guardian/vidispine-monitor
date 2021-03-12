@@ -100,7 +100,7 @@ func (m VSMetricCheck) CheckDatabasePool(metrics *MetricsResponse, verboseMode b
 	}
 
 	if verboseMode {
-		log.Printf("INFO (verbose) vsmetriccheck.CheckDatabasePool total pool size is %f, with %f currently active and %f idle",
+		log.Printf("INFO (verbose) vsmetriccheck.CheckDatabasePool total pool size is %.1f, with %.1f currently active and %.1f idle",
 			poolSizeTotal.MustFloat(), poolActive.MustFloat(), poolIdle.MustFloat())
 	}
 
@@ -128,6 +128,51 @@ func (m VSMetricCheck) CheckDatabasePool(metrics *MetricsResponse, verboseMode b
 	return nil
 }
 
+func (m VSMetricCheck) CheckHeapUsage(metrics *MetricsResponse, verboseMode bool) *pagerduty.TriggerEvent {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Print("ERROR could not process heap usage: ", r)
+		}
+	}()
+
+	heapUsage, haveHeapUsage := metrics.Gauges["jvm.memory.heap.usage"]
+	if !haveHeapUsage {
+		log.Print("WARNING jvm.memory.heap.usage is not present in metric gauges, can't check heap usage")
+		return nil
+	}
+
+	if verboseMode {
+		log.Printf("INFO (verbose) vsmetriccheck.CheckHeapUsage JVM heap usage is %.1f%%", heapUsage.MustFloat()*100)
+	}
+
+	if heapUsage.MustFloat() > 0.9 {
+		nowTime := time.Now()
+		log.Print("WARNING heap usage is at 90%, alerting")
+		return pagerduty.NewTriggerEvent(
+			"vidispine-heap",
+			m.IntegrationKey,
+			pagerduty.SeverityCritical,
+			"vidispine-heap",
+			"Vidispine heap RAM usage is at 90%, failure is likely. Pod needs restarting and RAM allocation re-assessing",
+			&nowTime,
+		)
+	}
+
+	if heapUsage.MustFloat() > 0.7 {
+		nowTime := time.Now()
+		log.Print("WARNING heap usage is at 70%, alerting")
+		return pagerduty.NewTriggerEvent(
+			"vidispine-heap",
+			m.IntegrationKey,
+			pagerduty.SeverityWarning,
+			"vidispine-heap",
+			"Vidispine heap RAM usage is at 70%, monitor and update RAM allocation before failures are likely",
+			&nowTime,
+		)
+	}
+	return nil
+}
+
 func (m VSMetricCheck) Run(verboseMode bool) ([]*pagerduty.TriggerEvent, error) {
 	metrics, err := m.loadMetrics()
 	if err != nil {
@@ -142,5 +187,9 @@ func (m VSMetricCheck) Run(verboseMode bool) ([]*pagerduty.TriggerEvent, error) 
 		alerts = append(alerts, poolAlert)
 	}
 
+	heapAlert := m.CheckHeapUsage(metrics, verboseMode)
+	if heapAlert != nil {
+		alerts = append(alerts, heapAlert)
+	}
 	return alerts, nil
 }
