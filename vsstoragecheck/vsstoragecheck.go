@@ -66,9 +66,14 @@ func (c VSStorageCheck) loadStorageData() (*VSStoragesResponse, error) {
 func (c VSStorageCheck) CheckStorage(s *VSStorage, verboseMode bool) []*pagerduty.TriggerEvent {
 	foundErrors := make([]*pagerduty.TriggerEvent, 0)
 
+	if verboseMode {
+		log.Printf("INFO (verbose) vsstoragecheck.CheckStorage %s %s state is %s", s.Type, s.Id, s.State)
+	}
+
 	if s.State != StorageStateNone && s.State != StorageStateReady {
 		nowTime := time.Now()
 		bodyText := fmt.Sprintf("%s storage %s entered %s state", s.Type, s.Id, s.State)
+
 		stateErr := pagerduty.NewTriggerEvent(fmt.Sprintf("Storage %s", s.Id),
 			c.PDIntegrationKey,
 			pagerduty.SeverityError,
@@ -80,6 +85,9 @@ func (c VSStorageCheck) CheckStorage(s *VSStorage, verboseMode bool) []*pagerdut
 
 	usedCap := s.Capacity - s.FreeCapacity
 	if usedCap > s.HighWatermark {
+		if verboseMode {
+			log.Printf("INFO (verbose) %s %s watermark is at %d storage is over at %d", s.Type, s.Id, s.HighWatermark, usedCap)
+		}
 		nowTime := time.Now()
 		bodyText := fmt.Sprintf("%s storage %s is at %s used, over the high watermark by %s", s.Type, s.Id, common.FormatBytes(usedCap), common.FormatBytes(usedCap-s.HighWatermark))
 		watermarkErr := pagerduty.NewTriggerEvent(fmt.Sprintf("Storage %s", s.Id),
@@ -89,9 +97,17 @@ func (c VSStorageCheck) CheckStorage(s *VSStorage, verboseMode bool) []*pagerdut
 			bodyText,
 			&nowTime)
 		foundErrors = append(foundErrors, watermarkErr)
+	} else {
+		if verboseMode {
+			log.Printf("INFO (verbose) %s %s watermark is at %d but storage ok at %d", s.Type, s.Id, s.HighWatermark, usedCap)
+		}
 	}
 
-	dangerlevel := float64(s.Capacity) * 0.95
+	dangerlevel := float64(s.Capacity) * 0.05
+
+	if verboseMode {
+		log.Printf("DEBUG capacity is %d =%s (or %f) so dangerlevel is %f", s.Capacity, common.FormatBytes(s.Capacity), float64(s.Capacity), dangerlevel)
+	}
 
 	if float64(s.FreeCapacity) < dangerlevel {
 		nowTime := time.Now()

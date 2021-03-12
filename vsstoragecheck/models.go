@@ -15,23 +15,23 @@ type VSStorageType string
 
 const (
 	LocalStorage    VSStorageType = "LOCAL"
-	SharedStorage                 = "SHARED"
-	RemoteStorage                 = "REMOTE"
-	ExternalStorage               = "EXTERNAL"
-	ArchiveStorage                = "ARCHIVE"
-	ExportStorage                 = "EXPORT"
+	SharedStorage   VSStorageType = "SHARED"
+	RemoteStorage   VSStorageType = "REMOTE"
+	ExternalStorage VSStorageType = "EXTERNAL"
+	ArchiveStorage  VSStorageType = "ARCHIVE"
+	ExportStorage   VSStorageType = "EXPORT"
 )
 
 type VSStorageState string
 
 const (
 	StorageStateNone       VSStorageState = "NONE"
-	StorageStateReady                     = "READY"
-	StorageStateOffline                   = "OFFLINE"
-	StorageStateFailed                    = "FAILED"
-	StorageStateDisabled                  = "DISABLED"
-	StorageStateEvacuating                = "EVACUATING"
-	StorageStateEvacuated                 = "EVACUATED"
+	StorageStateReady      VSStorageState = "READY"
+	StorageStateOffline    VSStorageState = "OFFLINE"
+	StorageStateFailed     VSStorageState = "FAILED"
+	StorageStateDisabled   VSStorageState = "DISABLED"
+	StorageStateEvacuating VSStorageState = "EVACUATING"
+	StorageStateEvacuated  VSStorageState = "EVACUATED"
 )
 
 type VSStorage struct {
