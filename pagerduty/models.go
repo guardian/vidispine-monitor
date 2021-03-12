@@ -59,7 +59,8 @@ func NewTriggerEvent(component string, integrationKey string, severity Severity,
 }
 
 func (e *TriggerEvent) String() string {
-	return fmt.Sprintf("%s on %s due to %s", e.EventAction, e.Payload.Source, e.Payload.Summary)
+	return e.Payload.Summary
+	//return fmt.Sprintf("%s alert on %s due to %s", e.EventAction, e.Payload.Source, e.Payload.Summary)
 }
 
 //https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/post
