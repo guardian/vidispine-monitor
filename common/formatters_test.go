@@ -18,6 +18,6 @@ func TestFormatBytes(t *testing.T) {
 	var gbValue int64 = 2048 * 1024 * 1024
 	gbResult := FormatBytes(gbValue)
 	if gbResult != "2Gib" {
-		t.Errorf("Expected 2Mib, got %s", gbResult)
+		t.Errorf("Expected 2Gib, got %s", gbResult)
 	}
 }
