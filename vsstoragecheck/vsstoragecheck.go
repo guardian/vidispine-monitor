@@ -99,15 +99,11 @@ func (c VSStorageCheck) CheckStorage(s *VSStorage, verboseMode bool) []*pagerdut
 		foundErrors = append(foundErrors, watermarkErr)
 	} else {
 		if verboseMode {
-			log.Printf("INFO (verbose) %s %s watermark is at %d but storage ok at %d", s.Type, s.Id, s.HighWatermark, usedCap)
+			log.Printf("INFO (verbose) %s %s watermark is at %s but storage ok at %s", s.Type, s.Id, common.FormatBytes(s.HighWatermark), common.FormatBytes(usedCap))
 		}
 	}
 
 	dangerlevel := float64(s.Capacity) * 0.05
-
-	if verboseMode {
-		log.Printf("DEBUG capacity is %d =%s (or %f) so dangerlevel is %f", s.Capacity, common.FormatBytes(s.Capacity), float64(s.Capacity), dangerlevel)
-	}
 
 	if float64(s.FreeCapacity) < dangerlevel {
 		nowTime := time.Now()
