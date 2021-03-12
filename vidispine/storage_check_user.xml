@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<UserDocument xmlns="http://xml.vidispine.com/schema/vidispine">
+    <userName>vidispine-monitor</userName>
+    <realName>Vidispine monitor service account</realName>
+    <password>changeme</password>
+    <groupList>
+        <group>
+            <groupName>StorageCheck</groupName>
+        </group>
+    </groupList>
+</UserDocument>
