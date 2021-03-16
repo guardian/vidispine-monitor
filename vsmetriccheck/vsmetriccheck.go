@@ -158,15 +158,15 @@ func (m VSMetricCheck) CheckHeapUsage(metrics *MetricsResponse, verboseMode bool
 		)
 	}
 
-	if heapUsage.MustFloat() > 0.7 {
+	if heapUsage.MustFloat() > 0.75 {
 		nowTime := time.Now()
-		log.Print("WARNING heap usage is at 70%, alerting")
+		log.Print("WARNING heap usage is at 75%, alerting")
 		return pagerduty.NewTriggerEvent(
 			"vidispine-heap",
 			m.IntegrationKey,
 			pagerduty.SeverityWarning,
 			"vidispine-heap",
-			"Vidispine heap RAM usage is at 70%, monitor and update RAM allocation before failures are likely",
+			"Vidispine heap RAM usage is at 75%, monitor and update RAM allocation before failures are likely",
 			&nowTime,
 		)
 	}
