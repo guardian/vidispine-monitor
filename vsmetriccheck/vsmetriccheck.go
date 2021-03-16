@@ -173,6 +173,61 @@ func (m VSMetricCheck) CheckHeapUsage(metrics *MetricsResponse, verboseMode bool
 	return nil
 }
 
+func (m VSMetricCheck) CheckExcessive500s(metrics *MetricsResponse, verboseMode bool) *pagerduty.TriggerEvent {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Print("ERROR could not process 500 response check", r)
+		}
+	}()
+
+	longCheck, haveLongCheck := metrics.Gauges["io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-15m"]
+	medCheck, haveMedCheck := metrics.Gauges["io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-5m"]
+	shortCheck, haveShortCheck := metrics.Gauges["io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-1m"]
+
+	if !haveLongCheck || !haveMedCheck {
+		log.Print("WARNING missing MutableServletContextHandler.percent-5xx-* so can't check for 500 errors")
+		return nil
+	}
+
+	if verboseMode {
+		log.Printf("INFO (verbose) vsmetriccheck.CheckExcessive500s 500 rate over 15mins is %0.1f%%, over 5mins is %0.1f%%", longCheck.MustFloat()*100, medCheck.MustFloat()*100)
+	}
+	if haveShortCheck && shortCheck.MustFloat() > 0.95 {
+		nowTime := time.Now()
+		log.Print("WARNING 95% of responses in last minute were 5xx, alerting")
+		return pagerduty.NewTriggerEvent("vidispine-5xx",
+			m.IntegrationKey,
+			pagerduty.SeverityError,
+			"vidispine-5xx",
+			"95% of responses in the last minute were 5xx, needs investigation",
+			&nowTime)
+	}
+
+	if medCheck.MustFloat() > 0.6 {
+		nowTime := time.Now()
+		log.Print("WARNING 60% of responses in last 5mins were 5xx, alerting")
+		return pagerduty.NewTriggerEvent("vidispine-5xx",
+			m.IntegrationKey,
+			pagerduty.SeverityWarning,
+			"vidispine-5xx",
+			"60% of responses in last 5mins were 5xx, needs investigation",
+			&nowTime)
+	}
+
+	if longCheck.MustFloat() > 0.4 {
+		nowTime := time.Now()
+		log.Print("WARNING 40% of responses in last 15mins were 5xx, alerting")
+		return pagerduty.NewTriggerEvent("vidispine-5xx",
+			m.IntegrationKey,
+			pagerduty.SeverityWarning,
+			"vidispine-5xx",
+			"40% of responses in last 15mins were 5xx, needs investigation",
+			&nowTime)
+	}
+
+	return nil
+}
+
 func (m VSMetricCheck) Run(verboseMode bool) ([]*pagerduty.TriggerEvent, error) {
 	metrics, err := m.loadMetrics()
 	if err != nil {
@@ -191,5 +246,11 @@ func (m VSMetricCheck) Run(verboseMode bool) ([]*pagerduty.TriggerEvent, error) 
 	if heapAlert != nil {
 		alerts = append(alerts, heapAlert)
 	}
+
+	responsesAlert := m.CheckExcessive500s(metrics, verboseMode)
+	if responsesAlert != nil {
+		alerts = append(alerts, responsesAlert)
+	}
+
 	return alerts, nil
 }

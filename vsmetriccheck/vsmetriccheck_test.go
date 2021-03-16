@@ -162,3 +162,62 @@ func TestVSMetricCheck_CheckHeapUsage_nodata(t *testing.T) {
 		t.Errorf("CheckHeapUsage returned an alert %v when there was no data", result)
 	}
 }
+
+func TestVSMetricCheck_CheckExcessive500s_normal(t *testing.T) {
+	fakeMetrics := &MetricsResponse{
+		Version: "4.0.0",
+		Gauges: map[string]MetricGauge{
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-15m": {Value: 0.05},
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-5m":  {Value: 0.01},
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-1m":  {Value: 0.0},
+		},
+	}
+
+	c := VSMetricCheck{VidispineDbName: "vsdb"}
+	result := c.CheckExcessive500s(fakeMetrics, false)
+	if result != nil {
+		t.Errorf("CheckExcessive500s returned alert %v meters were in-range", result)
+	}
+}
+
+func TestVSMetricCheck_CheckExcessive500s_1min(t *testing.T) {
+	fakeMetrics := &MetricsResponse{
+		Version: "4.0.0",
+		Gauges: map[string]MetricGauge{
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-15m": {Value: 0.45},
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-5m":  {Value: 0.68},
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-1m":  {Value: 0.97},
+		},
+	}
+
+	c := VSMetricCheck{VidispineDbName: "vsdb"}
+	result := c.CheckExcessive500s(fakeMetrics, false)
+	if result == nil {
+		t.Error("CheckExcessive500s returned no alert when 97% of responses in 1min were 5xx", result)
+	} else {
+		if result.Payload.Severity != pagerduty.SeverityError {
+			t.Errorf("CheckExcessive500s returned a '%s' severity when it should have been 'error'", result.Payload.Severity)
+		}
+	}
+}
+
+func TestVSMetricCheck_CheckExcessive500s_5min(t *testing.T) {
+	fakeMetrics := &MetricsResponse{
+		Version: "4.0.0",
+		Gauges: map[string]MetricGauge{
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-15m": {Value: 0.45},
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-5m":  {Value: 0.68},
+			"io.dropwizard.jetty.MutableServletContextHandler.percent-5xx-1m":  {Value: 0.39},
+		},
+	}
+
+	c := VSMetricCheck{VidispineDbName: "vsdb"}
+	result := c.CheckExcessive500s(fakeMetrics, false)
+	if result == nil {
+		t.Error("CheckExcessive500s returned no alert when 68% of responses in 5min were 5xx", result)
+	} else {
+		if result.Payload.Severity != pagerduty.SeverityWarning {
+			t.Errorf("CheckExcessive500s returned a '%s' severity when it should have been 'warning'", result.Payload.Severity)
+		}
+	}
+}
