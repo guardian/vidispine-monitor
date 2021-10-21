@@ -126,23 +126,23 @@ func TestVSMetricCheck_CheckHeapUsage_90pc(t *testing.T) {
 }
 
 /**
-should return a warning if heap usage >70%
+should return a warning if heap usage >80%
 */
-func TestVSMetricCheck_CheckHeapUsage_70pc(t *testing.T) {
+func TestVSMetricCheck_CheckHeapUsage_80pc(t *testing.T) {
 	fakeMetrics := &MetricsResponse{
 		Version: "4.0.0",
 		Gauges: map[string]MetricGauge{
-			"jvm.memory.heap.usage": {Value: 0.8},
+			"jvm.memory.heap.usage": {Value: 0.81},
 		},
 	}
 
 	c := VSMetricCheck{VidispineDbName: "vsdb"}
 	result := c.CheckHeapUsage(fakeMetrics, false)
 	if result == nil {
-		t.Error("CheckHeapUsage returned no alert when heap was at 80%")
+		t.Error("CheckHeapUsage returned no alert when heap was at 81%")
 	} else {
 		if result.Payload.Severity != pagerduty.SeverityWarning {
-			t.Errorf("CheckHeapUsage returned a %s for 80%% heap when it should have been 'warning'.", result.Payload.Severity)
+			t.Errorf("CheckHeapUsage returned a %s for 81%% heap when it should have been 'warning'.", result.Payload.Severity)
 		}
 	}
 }
