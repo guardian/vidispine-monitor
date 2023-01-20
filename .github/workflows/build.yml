@@ -51,12 +51,13 @@ jobs:
       - name: ECR Login
         run: aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v3
-        with:
-          tags: ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/vidispine-monitor:${{ env.GITHUB_RUN_NUMBER }}
-          push: true
-          context: .
+      - run: docker build . -t "guardianmultimedia/vidispine-monitor:${{ env.GITHUB_RUN_NUMBER }}"
+
+      - name: Tag Docker image vidispine-monitor
+        run: docker tag guardianmultimedia/vidispine-monitor:${{ env.GITHUB_RUN_NUMBER }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/vidispine-monitor:${{ env.GITHUB_RUN_NUMBER }}
+
+      - name: Push Docker image vidispine-monitor
+        run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/vidispine-monitor:${{ env.GITHUB_RUN_NUMBER }}
 
       - name: Output build-info.yaml
         uses: fredex42/pluto-build-info@v1.0
